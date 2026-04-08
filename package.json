@@ -1,8 +1,0 @@
-{
-  "name": "meta-ai-app",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "start": "bash start.sh"
-  }
-}

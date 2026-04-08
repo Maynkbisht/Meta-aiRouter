@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-import sys
 import os
 from dotenv import load_dotenv
 
-# Load .env file BEFORE importing app
-load_dotenv("/Users/kenya/Downloads/META-AI 2.0/.env")
+# ---------- LOAD ENV ----------
+# Load .env from current project directory
+load_dotenv()
 
-sys.path.insert(0, "/Users/kenya/Downloads/META-AI 2.0")
+# ---------- IMPORT APP ----------
+from app import app
 
+# ---------- CONFIG ----------
+port = int(os.environ.get("PORT", 5067))
+debug = os.environ.get("DEBUG", "False").lower() == "true"
+
+# ---------- RUN ----------
 if __name__ == "__main__":
-    from app import app
-
-    port = int(os.environ.get("PORT", 5011))
-
-    app.run(debug=False, host="0.0.0.0", port=port)
+    print(f"🚀 Starting server on port {port}...")
+    app.run(host="0.0.0.0", port=port, debug=debug)

@@ -1,161 +1,363 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meta AI</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <!-- MathJax for math rendering -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meta AI — Intelligent Router</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+
+    <!-- MathJax -->
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <!-- Marked.js for markdown formatting -->
+
+    <!-- Marked.js -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <link rel="stylesheet" href="/static/css/style.css" />
+
+    <style>
+        /* ── PAGE HEIGHT ── */
+        html, body { height: 100%; overflow: hidden; }
+
+        .app-container {
+            height: 100vh;
+            display: grid;
+            grid-template-rows: 58px 1fr;
+            overflow: hidden;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            overflow: hidden;
+        }
+
+        .sidebar        { height: 100%; overflow-y: auto; }
+        .chat-area      { height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+        .chat-container { height: 100%; display: flex; flex-direction: column; }
+        .chat-messages  { flex: 1; overflow-y: auto; }
+
+        /* ── GRID TEXTURE ── */
+        .chat-messages {
+            background-image:
+                linear-gradient(rgba(0,0,0,0.022) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.022) 1px, transparent 1px);
+            background-size: 36px 36px;
+        }
+
+        /* ── WELCOME ICON ── */
+        .welcome-icon-box {
+            width: 54px;
+            height: 54px;
+            background: #000;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 1.25rem;
+            color: #fff;
+        }
+
+        /* ── SESSION INFO ROWS ── */
+        .session-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.65rem 1rem;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.72rem;
+            color: #999;
+            border-bottom: 1px solid #e8e8e8;
+            background: #fff;
+        }
+        .session-row:last-child { border-bottom: none; }
+        .session-row i { font-size: 0.65rem; color: #bbb; width: 12px; text-align: center; }
+
+        /* ── STATUS DOT ── */
+        .status-dot {
+            width: 6px; height: 6px;
+            background: #000; border-radius: 50%;
+            display: inline-block;
+            animation: blink 2.5s ease-in-out infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.25; }
+        }
+
+        /* ── CHAR COUNTER ── */
+        .char-counter {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.65rem;
+            color: #ccc;
+            align-self: flex-end;
+            padding-bottom: 3px;
+            min-width: 24px;
+            text-align: right;
+        }
+
+        /* ── INPUT FOOTER ── */
+        .input-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0 0.1rem;
+        }
+
+        /* ── KEYBOARD HINT ── */
+        .keyboard-hint {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.65rem;
+            color: #bbb;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+        }
+        kbd {
+            background: #f3f3f3;
+            border: 1px solid #d8d8d8;
+            border-radius: 3px;
+            padding: 0.1rem 0.35rem;
+            font-size: 0.62rem;
+            font-family: 'DM Mono', monospace;
+            color: #555;
+        }
+
+        /* ── MOBILE TOGGLE ── */
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.65);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            html, body { overflow: auto; }
+            .app-container  { height: auto; min-height: 100vh; grid-template-rows: 58px auto; }
+            .main-content   { grid-template-columns: 1fr; height: auto; }
+            .sidebar        { height: auto; }
+            .chat-area      { height: auto; min-height: 60vh; }
+            .chat-container { height: auto; min-height: 60vh; }
+            .chat-messages  { min-height: 40vh; }
+            .mobile-toggle  { display: block; }
+            .keyboard-hint  { display: none; }
+        }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="header-content">
-                <div class="logo">
-                    <i class="fas fa-robot"></i>
-                    <h1>Meta AI</h1>
+<div class="app-container">
+
+    <!-- ════════════════════════════
+         HEADER
+    ════════════════════════════ -->
+    <header class="app-header">
+        <div class="header-content">
+
+            <div class="logo">
+                <button class="mobile-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <i class="fas fa-robot"></i>
+                <h1>Meta AI</h1>
+            </div>
+
+            <div class="header-stats">
+                <div class="stat-item">
+                    <i class="fas fa-comments"></i>
+                    <span id="message-count">0</span>&thinsp;msgs
                 </div>
-                <div class="header-stats">
-                    <div class="stat-item">
-                        <i class="fas fa-comments"></i>
-                        <span id="message-count">0</span>
+                <div class="stat-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="session-time">00:00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="status-dot"></span>
+                    live
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- ════════════════════════════
+         BODY
+    ════════════════════════════ -->
+    <div class="main-content">
+
+        <!-- ─── SIDEBAR ─── -->
+        <aside class="sidebar" id="sidebar">
+
+            <!-- Controls -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-sliders-h"></i>&ensp;Controls</h3>
+                <div class="control-buttons">
+                    <button id="clear-btn" class="btn btn-secondary">
+                        <i class="fas fa-trash-alt"></i> Clear History
+                    </button>
+                    <button id="undo-btn" class="btn btn-secondary">
+                        <i class="fas fa-undo-alt"></i> Undo Last
+                    </button>
+                    <button id="redo-btn" class="btn btn-secondary">
+                        <i class="fas fa-redo-alt"></i> Redo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-chart-bar"></i>&ensp;Session Stats</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-messages">0</div>
+                        <div class="stat-label">Messages</div>
                     </div>
-                    <div class="stat-item">
-                        <i class="fas fa-clock"></i>
-                        <span id="session-time">00:00</span>
+                    <div class="stat-card">
+                        <div class="stat-value" id="pending-prompts">0</div>
+                        <div class="stat-label">Pending</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="undo-available">0</div>
+                        <div class="stat-label">Undo</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="redo-available">0</div>
+                        <div class="stat-label">Redo</div>
                     </div>
                 </div>
             </div>
-        </header>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <div class="sidebar-section">
-                    <h3><i class="fas fa-cogs"></i> Controls</h3>
-                    <div class="control-buttons">
-                        <button id="clear-btn" class="btn btn-secondary">
-                            <i class="fas fa-trash"></i> Clear History
-                        </button>
-                        <button id="undo-btn" class="btn btn-secondary">
-                            <i class="fas fa-undo"></i> Undo
-                        </button>
-                        <button id="redo-btn" class="btn btn-secondary">
-                            <i class="fas fa-redo"></i> Redo
-                        </button>
+            <!-- AI Routing -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-brain"></i>&ensp;AI Routing</h3>
+                <div class="ai-types">
+                    <div class="ai-type general">
+                        <i class="fas fa-globe"></i>
+                        <span>General AI</span>
+                        <div class="ai-count" id="general-count">0</div>
+                    </div>
+                    <div class="ai-type language">
+                        <i class="fas fa-language"></i>
+                        <span>Language AI</span>
+                        <div class="ai-count" id="language-count">0</div>
+                    </div>
+                    <div class="ai-type math">
+                        <i class="fas fa-calculator"></i>
+                        <span>Math AI</span>
+                        <div class="ai-count" id="math-count">0</div>
                     </div>
                 </div>
+            </div>
 
-                <div class="sidebar-section">
-                    <h3><i class="fas fa-chart-bar"></i> Session Stats</h3>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-value" id="total-messages">0</div>
-                            <div class="stat-label">Messages</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="pending-prompts">0</div>
-                            <div class="stat-label">Pending</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="undo-available">0</div>
-                            <div class="stat-label">Undo</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="redo-available">0</div>
-                            <div class="stat-label">Redo</div>
-                        </div>
-                    </div>
+            <!-- Session Info -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-info-circle"></i>&ensp;Session Info</h3>
+                <div class="session-row">
+                    <i class="fas fa-circle" style="color:#000; font-size:0.4rem;"></i>
+                    Active session
                 </div>
-
-                <div class="sidebar-section">
-                    <h3><i class="fas fa-brain"></i> AI Types</h3>
-                    <div class="ai-types">
-                        <div class="ai-type general">
-                            <i class="fas fa-globe"></i>
-                            <span>General AI</span>
-                            <div class="ai-count" id="general-count">0</div>
-                        </div>
-                        <div class="ai-type language">
-                            <i class="fas fa-language"></i>
-                            <span>Language AI</span>
-                            <div class="ai-count" id="language-count">0</div>
-                        </div>
-                        <div class="ai-type math">
-                            <i class="fas fa-calculator"></i>
-                            <span>Math AI</span>
-                            <div class="ai-count" id="math-count">0</div>
-                        </div>
-                    </div>
+                <div class="session-row">
+                    <i class="fas fa-shield-alt"></i>
+                    Local processing only
                 </div>
-
-                <div class="sidebar-section">
-                    <h3><i class="fas fa-list"></i> Pending Queue</h3>
-                    <div id="pending-list" class="pending-list">
-                        <div class="empty-state">No pending prompts</div>
-                    </div>
+                <div class="session-row">
+                    <i class="fas fa-bolt"></i>
+                    Auto-routing enabled
                 </div>
-            </aside>
+                <div class="session-row">
+                    <i class="fas fa-code-branch"></i>
+                    v1.0.0
+                </div>
+            </div>
 
-            <!-- Chat Area -->
-            <main class="chat-area">
-                <div class="chat-container">
-                    <!-- Chat Messages -->
-                    <div id="chat-messages" class="chat-messages">
-                        <div class="welcome-message">
-                            <div class="welcome-content">
+            <!-- Pending Queue -->
+            <div class="sidebar-section">
+                <h3><i class="fas fa-list-ul"></i>&ensp;Pending Queue</h3>
+                <div id="pending-list" class="pending-list">
+                    <div class="empty-state">No pending prompts</div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- ─── CHAT AREA ─── -->
+        <main class="chat-area">
+            <div class="chat-container">
+
+                <!-- Messages -->
+                <div id="chat-messages" class="chat-messages">
+                    <div class="welcome-message">
+                        <div class="welcome-content">
+
+                            <div class="welcome-icon-box">
                                 <i class="fas fa-robot"></i>
-                                <h2>Welcome to Meta AI</h2>
-                                <p>I can route your questions to the best AI chatbot:</p>
-                                <div class="ai-options">
-                                    <div class="ai-option">
-                                        <i class="fas fa-globe"></i>
-                                        <span>General AI - for general knowledge questions</span>
-                                    </div>
-                                    <div class="ai-option">
-                                        <i class="fas fa-language"></i>
-                                        <span>Language AI - for language learning and grammar</span>
-                                    </div>
-                                    <div class="ai-option">
-                                        <i class="fas fa-calculator"></i>
-                                        <span>Math AI - for mathematical problems and calculations</span>
-                                    </div>
+                            </div>
+
+                            <h2>Welcome to Meta AI</h2>
+                            <p>Ask anything. I'll automatically route your question to the best AI model.</p>
+
+                            <div class="ai-options">
+                                <div class="ai-option">
+                                    <i class="fas fa-globe"></i>
+                                    <span>General AI &mdash; world knowledge &amp; general questions</span>
                                 </div>
-                                <p class="start-prompt">Type your question below to get started!</p>
+                                <div class="ai-option">
+                                    <i class="fas fa-language"></i>
+                                    <span>Language AI &mdash; grammar, translation &amp; writing help</span>
+                                </div>
+                                <div class="ai-option">
+                                    <i class="fas fa-calculator"></i>
+                                    <span>Math AI &mdash; equations, proofs &amp; calculations</span>
+                                </div>
                             </div>
+
+                            <p class="start-prompt">↓&ensp;type your question below to get started</p>
+
                         </div>
                     </div>
+                </div>
 
-                    <!-- Classification Display -->
-                    <div id="classification-display" class="classification-display" style="display: none;">
-                        <div class="classification-content">
-                            <i class="fas fa-brain"></i>
-                            <span id="classification-text"></span>
-                        </div>
+                <!-- Classification Banner -->
+                <div id="classification-display" class="classification-display" style="display: none;">
+                    <div class="classification-content">
+                        <i class="fas fa-circle-notch"></i>
+                        <span id="classification-text">Classifying your question…</span>
                     </div>
+                </div>
 
-                    <!-- Input Area -->
-                    <div class="input-area">
-                        <div class="input-container">
-                            <div class="input-wrapper">
-                                <textarea 
-                                    id="message-input" 
-                                    placeholder="Ask me anything... I'll route it to the best AI chatbot!"
-                                    rows="1"
-                                ></textarea>
-                                <button id="send-btn" class="send-btn">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
+                <!-- Input -->
+                <div class="input-area">
+                    <div class="input-container">
+
+                        <div class="input-wrapper">
+                            <textarea
+                                id="message-input"
+                                placeholder="Ask me anything — I'll route it to the best AI…"
+                                rows="1"
+                                aria-label="Message input"
+                            ></textarea>
+                            <span class="char-counter" id="char-counter">0</span>
+                            <button id="send-btn" class="send-btn" aria-label="Send message">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+
+                        <div class="input-footer">
                             <div class="input-actions">
                                 <button id="add-to-queue-btn" class="btn btn-outline">
                                     <i class="fas fa-plus"></i> Add to Queue
@@ -164,24 +366,62 @@
                                     <i class="fas fa-play"></i> Process Queue
                                 </button>
                             </div>
+                            <div class="keyboard-hint">
+                                <kbd>Enter</kbd> send &nbsp;&middot;&nbsp;
+                                <kbd>Shift</kbd>+<kbd>Enter</kbd> newline
+                            </div>
                         </div>
+
                     </div>
                 </div>
-            </main>
-        </div>
 
-        <!-- Loading Overlay -->
-        <div id="loading-overlay" class="loading-overlay" style="display: none;">
-            <div class="loading-content">
-                <div class="spinner"></div>
-                <p>Processing your request...</p>
-            </div>
-        </div>
+            </div><!-- /.chat-container -->
+        </main>
 
-        <!-- Toast Notifications -->
-        <div id="toast-container" class="toast-container"></div>
+    </div><!-- /.main-content -->
+
+</div><!-- /.app-container -->
+
+<!-- ── LOADING OVERLAY ── -->
+<div id="loading-overlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Processing your request…</p>
     </div>
+</div>
 
-    <script src="/static/js/app.js"></script>
+<!-- ── TOASTS ── -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- ── SCRIPTS ── -->
+<script>
+    /* Auto-grow textarea + char counter */
+    const textarea    = document.getElementById('message-input');
+    const charCounter = document.getElementById('char-counter');
+
+    textarea.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        charCounter.textContent = this.value.length;
+    });
+
+    /* Enter to send, Shift+Enter for newline */
+    textarea.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            document.getElementById('send-btn').click();
+        }
+    });
+
+    /* Mobile sidebar toggle */
+    document.getElementById('sidebar-toggle').addEventListener('click', function () {
+        const sb = document.getElementById('sidebar');
+        sb.style.display = (sb.style.display === 'none') ? '' : 'none';
+    });
+</script>
+
+<!-- Your existing app logic -->
+<script src="/static/js/app.js"></script>
+
 </body>
 </html>

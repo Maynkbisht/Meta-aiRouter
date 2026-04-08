@@ -2,6 +2,9 @@
 
 A Flask-based chatbot platform that intelligently routes user prompts to the best AI provider based on prompt classification and provider strengths.
 
+## Live Demo: 
+
+
 ## Features
 
 ✨ **Multi-Provider Support**
@@ -100,7 +103,7 @@ export SECRET_KEY="your-secret-key"
 ### 3. Run the Application
 
 ```bash
-python app.py
+npm start
 ```
 
 The app starts on `http://localhost:5010`
