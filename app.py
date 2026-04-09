@@ -89,39 +89,69 @@ def chat():
 # --- Streaming Endpoint for AI Chat ---
 @app.route("/api/chat/stream", methods=["POST"])
 def chat_stream():
-    data = request.get_json()
-    prompt = data.get("prompt", "").strip()
-    chat_session = get_or_create_session()
-    category, confidence, keyword_matches = classifier.classify_prompt(prompt)
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON body"}), 400
 
-    def generate():
-        api_response = api_handler.call_ai_api(prompt, category, keyword_matches)
-        if api_response.get("success"):
-            text = api_response["response"]
-            # For real streaming, split by sentences, paragraphs, or yield as model produces tokens.
-            for word in text.split():
-                yield word + " "
-                time.sleep(0.05)
-            message = ChatMessage(
-                user_prompt=prompt,
-                ai_response=text,
-                ai_type=api_response.get("provider", category),
-                classification=category,
-                timestamp=datetime.now(),
-                ai_provider=api_response.get(
-                    "provider_name", api_response.get("provider")
-                ),
-            )
-            chat_session.add_message(message)
-        else:
-            error_text = api_response.get("error", "Unknown error occurred")
-            if isinstance(error_text, dict):
-                error_text = f"[ERROR] {error_text.get('code', '')}: {error_text.get('message', '')}"
+        prompt = data.get("prompt", "").strip()
+        if not prompt:
+            return jsonify({"error": "Prompt cannot be empty"}), 400
+
+        # Resolve session BEFORE entering the generator (session context is
+        # not available inside a generator after the response has started)
+        chat_session = get_or_create_session()
+        session_id = session.get("session_id")  # capture for use inside generator
+
+        category, confidence, keyword_matches = classifier.classify_prompt(prompt)
+
+        def generate():
+            api_response = api_handler.call_ai_api(prompt, category, keyword_matches)
+            if api_response.get("success"):
+                text = api_response["response"]
+                # Stream word-by-word
+                for word in text.split():
+                    yield word + " "
+                    time.sleep(0.04)
+
+                # Persist the completed message using the pre-resolved session
+                message = ChatMessage(
+                    user_prompt=prompt,
+                    ai_response=text,
+                    ai_type=api_response.get("provider", category),
+                    classification=category,
+                    timestamp=datetime.now(),
+                    ai_provider=api_response.get(
+                        "provider_name", api_response.get("provider")
+                    ),
+                )
+                # Use the sessions dict directly since Flask session context
+                # is unavailable inside a streaming generator
+                if session_id and session_id in sessions:
+                    sessions[session_id].add_message(message)
             else:
-                error_text = f"[ERROR] {error_text}"
-            yield error_text
+                error_text = api_response.get("error", "Unknown error occurred")
+                if isinstance(error_text, dict):
+                    error_text = (
+                        f"[ERROR] {error_text.get('code', '')}: "
+                        f"{error_text.get('message', '')}"
+                    )
+                else:
+                    error_text = f"[ERROR] {error_text}"
+                yield error_text
 
-    return Response(stream_with_context(generate()), mimetype="text/plain")
+        return Response(
+            stream_with_context(generate()),
+            mimetype="text/plain",
+            headers={
+                # Keep the connection alive while streaming
+                "X-Accel-Buffering": "no",
+                "Cache-Control": "no-cache",
+            },
+        )
+
+    except Exception as e:
+        return jsonify({"error": f"Stream endpoint failed: {str(e)}"}), 500
 
 
 @app.route("/api/classify", methods=["POST"])

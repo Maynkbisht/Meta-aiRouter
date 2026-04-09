@@ -27,10 +27,6 @@ class Provider:
         self.quality = float(quality)
 
     def call(self, prompt: str) -> Dict[str, Any]:
-        """Call the provider with the prompt.
-
-        Returns dict with keys: success, response or error, raw.
-        """
         raise NotImplementedError()
 
 
@@ -49,20 +45,14 @@ class GeminiProvider(Provider):
 
     def call(self, prompt: str) -> Dict[str, Any]:
         if not self.api_key:
-            return {
-                "success": False,
-                "error": "Gemini API key not configured. Set GEMINI_API_KEY.",
-            }
+            return {"success": False, "error": "Gemini API key not configured. Set GEMINI_API_KEY."}
 
         url = f"{self.base_url}?key={self.api_key}"
         headers = {"Content-Type": "application/json"}
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
 
         try:
-            # Use verify=False to bypass SSL issues on macOS
-            r = requests.post(
-                url, headers=headers, json=payload, timeout=30, verify=False
-            )
+            r = requests.post(url, headers=headers, json=payload, timeout=30, verify=False)
             r.raise_for_status()
             data = r.json()
 
@@ -78,19 +68,13 @@ class GeminiProvider(Provider):
                 answer = ""
 
             if not answer:
-                return {
-                    "success": False,
-                    "error": f"Empty response from Gemini: {str(data)[:200]}",
-                }
+                return {"success": False, "error": f"Empty response from Gemini: {str(data)[:200]}"}
 
             return {"success": True, "response": answer, "raw": data}
         except requests.exceptions.Timeout:
             return {"success": False, "error": "Gemini request timeout (30s exceeded)"}
         except requests.exceptions.ConnectionError as e:
-            return {
-                "success": False,
-                "error": f"Gemini connection error: {str(e)[:100]}",
-            }
+            return {"success": False, "error": f"Gemini connection error: {str(e)[:100]}"}
         except Exception as e:
             return {"success": False, "error": f"Gemini error: {str(e)[:100]}"}
 
@@ -110,10 +94,7 @@ class OpenAIProvider(Provider):
 
     def call(self, prompt: str) -> Dict[str, Any]:
         if not self.api_key:
-            return {
-                "success": False,
-                "error": "OpenAI API key not configured. Set OPENAI_API_KEY.",
-            }
+            return {"success": False, "error": "OpenAI API key not configured. Set OPENAI_API_KEY."}
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -127,10 +108,7 @@ class OpenAIProvider(Provider):
         }
 
         try:
-            # Use verify=False to bypass SSL issues on macOS
-            r = requests.post(
-                self.base_url, headers=headers, json=payload, timeout=30, verify=False
-            )
+            r = requests.post(self.base_url, headers=headers, json=payload, timeout=30, verify=False)
             r.raise_for_status()
             data = r.json()
             answer = (
@@ -140,28 +118,16 @@ class OpenAIProvider(Provider):
                 .strip()
             )
             if not answer:
-                return {
-                    "success": False,
-                    "error": f"Empty response from OpenAI: {str(data)[:200]}",
-                }
+                return {"success": False, "error": f"Empty response from OpenAI: {str(data)[:200]}"}
             return {"success": True, "response": answer, "raw": data}
         except requests.exceptions.Timeout:
             return {"success": False, "error": "OpenAI request timeout (30s exceeded)"}
         except requests.exceptions.ConnectionError as e:
-            return {
-                "success": False,
-                "error": f"OpenAI connection error: {str(e)[:100]}",
-            }
+            return {"success": False, "error": f"OpenAI connection error: {str(e)[:100]}"}
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429:
-                return {
-                    "success": False,
-                    "error": "OpenAI rate limit exceeded - trying next provider",
-                }
-            return {
-                "success": False,
-                "error": f"OpenAI HTTP error {e.response.status_code}",
-            }
+                return {"success": False, "error": "OpenAI rate limit exceeded - trying next provider"}
+            return {"success": False, "error": f"OpenAI HTTP error {e.response.status_code}"}
         except Exception as e:
             return {"success": False, "error": f"OpenAI error: {str(e)[:100]}"}
 
@@ -181,10 +147,7 @@ class ClaudeProvider(Provider):
 
     def call(self, prompt: str) -> Dict[str, Any]:
         if not self.api_key:
-            return {
-                "success": False,
-                "error": "Claude API key not configured. Set CLAUDE_API_KEY.",
-            }
+            return {"success": False, "error": "Claude API key not configured. Set CLAUDE_API_KEY."}
 
         headers = {
             "x-api-key": self.api_key,
@@ -198,67 +161,69 @@ class ClaudeProvider(Provider):
         }
 
         try:
-            # Use verify=False to bypass SSL issues on macOS
-            r = requests.post(
-                self.base_url, headers=headers, json=payload, timeout=30, verify=False
-            )
+            r = requests.post(self.base_url, headers=headers, json=payload, timeout=30, verify=False)
             r.raise_for_status()
             data = r.json()
             answer = data.get("content", [{}])[0].get("text", "").strip()
             if not answer:
-                return {
-                    "success": False,
-                    "error": f"Empty response from Claude: {str(data)[:200]}",
-                }
+                return {"success": False, "error": f"Empty response from Claude: {str(data)[:200]}"}
             return {"success": True, "response": answer, "raw": data}
         except requests.exceptions.Timeout:
             return {"success": False, "error": "Claude request timeout (30s exceeded)"}
         except requests.exceptions.ConnectionError as e:
-            return {
-                "success": False,
-                "error": f"Claude connection error: {str(e)[:100]}",
-            }
+            return {"success": False, "error": f"Claude connection error: {str(e)[:100]}"}
         except Exception as e:
             return {"success": False, "error": f"Claude error: {str(e)[:100]}"}
 
 
 class LocalEchoProvider(Provider):
-    """Local Echo provider for math and basic responses."""
+    """Local fallback provider — always succeeds, no API key needed.
+
+    Handles math expressions precisely; gives a helpful fallback for everything else.
+    This ensures the app always returns *something* even when all API keys are missing.
+    """
 
     def __init__(self):
         super().__init__(
             id="local_echo",
-            name="Local Echo (dev)",
-            strengths=["math_prompt"],
-            quality=0.5,
+            name="Local Echo (dev fallback)",
+            # Listed last — only wins when all real providers fail or are unkeyed
+            strengths=["math_prompt", "general_prompt", "language_prompt"],
+            quality=0.1,   # Low quality keeps it at the bottom of the ranking
         )
 
     def call(self, prompt: str) -> Dict[str, Any]:
         import re
 
-        # Try to find mathematical expression
+        # ── Try simple arithmetic ──────────────────────────────────────────
         expr_match = re.search(
-            r"(\d+(?:\.\d+)?)\s*([\+\-\*\/])\s*(\d+(?:\.\d+)?)", prompt
+            r"(\d+(?:\.\d+)?)\s*([\+\-\*\/\^])\s*(\d+(?:\.\d+)?)", prompt
         )
         if expr_match:
             try:
                 num1, op, num2 = expr_match.groups()
-                expr = f"{num1}{op}{num2}"
-                result = eval(expr)
+                safe_op = op.replace("^", "**")
+                result = eval(f"{num1}{safe_op}{num2}")  # noqa: S307 — digits only
                 return {
                     "success": True,
-                    "response": f"The answer to {expr} is **{result}**.",
+                    "response": f"The answer to **{num1} {op} {num2}** is **{result}**.",
                 }
             except Exception as e:
-                return {
-                    "success": False,
-                    "error": f"Math evaluation failed: {str(e)[:100]}",
-                }
+                pass  # fall through to generic response
 
-        # For non-math queries, provide helpful response
+        # ── Generic fallback ──────────────────────────────────────────────
+        preview = prompt[:120].rstrip()
         return {
             "success": True,
-            "response": f"I processed your request: '{prompt[:100]}...' but I'm limited to math calculations. For other queries, please use OpenAI or Gemini.",
+            "response": (
+                "⚠️ **No AI provider is currently configured.**\n\n"
+                f"Your question was: *\"{preview}{'…' if len(prompt) > 120 else ''}\"*\n\n"
+                "To get real AI responses, add at least one API key to your `.env` file:\n\n"
+                "```\nGEMINI_API_KEY=your_key_here\n"
+                "OPENAI_API_KEY=your_key_here\n"
+                "CLAUDE_API_KEY=your_key_here\n```\n\n"
+                "Then restart the server with `python app.py`."
+            ),
         }
 
 
@@ -266,7 +231,7 @@ PROVIDERS: List[Provider] = [
     GeminiProvider(),
     OpenAIProvider(),
     ClaudeProvider(),
-    LocalEchoProvider(),
+    LocalEchoProvider(),   # Always last — guaranteed fallback
 ]
 
 
