@@ -103,7 +103,9 @@ export SECRET_KEY="your-secret-key"
 ### 3. Run the Application
 
 ```bash
-npm start
+
+python app.py
+
 ```
 
 The app starts on `http://localhost:5010`
