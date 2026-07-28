@@ -238,13 +238,10 @@ class LocalEchoProvider(Provider):
         }
 
 
-PROVIDERS: List[Provider] = [
+PROVIDERS = [
     GeminiProvider(),
-    OpenAIProvider(),
-    ClaudeProvider(),
-    LocalEchoProvider(),   # Always last — guaranteed fallback
+    LocalEchoProvider(),
 ]
-
 
 def get_provider_by_id(provider_id: str):
     """Look up a provider by its ID."""
