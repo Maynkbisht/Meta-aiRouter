@@ -51,44 +51,99 @@ class GeminiProvider(Provider):
             strengths=["language_prompt", "general_prompt"],
             quality=0.90,
         )
+
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+        self.base_url = (
+            "https://generativelanguage.googleapis.com/v1beta/models/"
+            "gemini-2.5-flash:generateContent"
+        )
 
     def call(self, prompt: str) -> Dict[str, Any]:
         if not self.api_key:
-            return {"success": False, "error": "Gemini API key not configured. Set GEMINI_API_KEY."}
+            return {
+                "success": False,
+                "error": "Gemini API key not configured."
+            }
 
         url = f"{self.base_url}?key={self.api_key}"
-        headers = {"Content-Type": "application/json"}
-        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        }
 
         try:
-            r = requests.post(url, headers=headers, json=payload, timeout=30, verify=False)
+            r = requests.post(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=30,
+                verify=False,
+            )
+
+            print("\n========== GEMINI DEBUG ==========")
+            print("Status Code:", r.status_code)
+            print("Response:", r.text)
+            print("==================================\n")
+
             r.raise_for_status()
+
             data = r.json()
 
-            answer = ""
-            try:
-                answer = (
-                    data.get("candidates", [{}])[0]
-                    .get("content", {})
-                    .get("parts", [{}])[0]
-                    .get("text", "")
-                ).strip()
-            except Exception:
-                answer = ""
+            answer = (
+                data.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+                .strip()
+            )
 
             if not answer:
-                return {"success": False, "error": f"Empty response from Gemini: {str(data)[:200]}"}
+                return {
+                    "success": False,
+                    "error": "Gemini returned an empty response."
+                }
 
-            return {"success": True, "response": answer, "raw": data}
+            return {
+                "success": True,
+                "response": answer,
+                "raw": data,
+            }
+
+        except requests.exceptions.HTTPError:
+            return {
+                "success": False,
+                "error": f"HTTP {r.status_code}: {r.text}",
+            }
+
         except requests.exceptions.Timeout:
-            return {"success": False, "error": "Gemini request timeout (30s exceeded)"}
-        except requests.exceptions.ConnectionError as e:
-            return {"success": False, "error": f"Gemini connection error: {str(e)[:100]}"}
-        except Exception as e:
-            return {"success": False, "error": f"Gemini error: {str(e)[:100]}"}
+            return {
+                "success": False,
+                "error": "Gemini request timed out.",
+            }
 
+        except requests.exceptions.ConnectionError as e:
+            return {
+                "success": False,
+                "error": f"Connection error: {e}",
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
 
 class OpenAIProvider(Provider):
     """OpenAI GPT API provider."""
