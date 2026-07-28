@@ -59,21 +59,18 @@ class api_handler:
             return {"success": False, "error": "No AI providers available."}
 
         # Try providers in order until one succeeds
-        last_error = None
-        for score, provider in scored_providers:
-            result = provider.call(prompt)
-            if result.get("success"):
-                return {
-                    "success": True,
-                    "response": result.get("response", ""),
-                    "provider": provider.id,
-                    "provider_name": provider.name,
-                    "raw": result.get("raw"),
-                }
-            else:
-                # Save error and try next provider
-                last_error = result.get("error", "Provider error")
-                continue
+     last_error = None
+
+for score, provider in scored_providers:
+    result = provider.call(prompt)
+
+    if result.get("success"):
+        return {
+            ...
+        }
+    else:
+        last_error = result.get("error", "Provider error")
+        continue
 
         # All providers failed
         return {
