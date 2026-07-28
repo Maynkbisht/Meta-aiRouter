@@ -13,6 +13,17 @@ import requests
 import urllib3
 from typing import List, Dict, Any
 
+
+print("=" * 40)
+
+print("OPENAI_API_KEY:", bool(os.environ.get("OPENAI_API_KEY")))
+
+print("GEMINI_API_KEY:", bool(os.environ.get("GEMINI_API_KEY")))
+
+print("CLAUDE_API_KEY:", bool(os.environ.get("CLAUDE_API_KEY")))
+
+print("=" * 40)
+
 # Disable SSL warnings for macOS compatibility
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
