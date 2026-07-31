@@ -7,26 +7,26 @@ Live Demo: https://meta-airouter.onrender.com
 
 ## Features
 
-✨ **Multi-Provider Support**
+ **Multi-Provider Support**
 
 - Seamlessly switch between multiple AI providers (Gemini, OpenAI, Claude, etc.)
 - Automatic provider selection based on prompt type and provider strengths
 - Easy to add new providers
 
-🧠 **Smart Prompt Classification**
+ **Smart Prompt Classification**
 
 - Classifies prompts by intent: math, language, general, weather, news, greeting
 - Keyword extraction for fine-grained routing decisions
 - Confidence scoring for each classification
 
-💬 **Chat Management**
+ **Chat Management**
 
 - Session-based chat history with undo/redo
 - Pending queue for batch processing
 - Real-time streaming responses
 - Session statistics and metrics
 
-🎨 **Modern UI**
+ **Modern UI**
 
 - Clean, responsive interface with sidebar statistics
 - Real-time AI type tracking
